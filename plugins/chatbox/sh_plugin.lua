@@ -97,6 +97,16 @@ if (CLIENT) then
 		end
 	end
 
+	function PLUGIN:OnPauseMenuShow()
+		if (!IsValid(ix.gui.chat) or !ix.gui.chat:GetActive()) then
+			return
+		end
+
+		ix.gui.chat:SetActive(false)
+
+		return false
+	end
+
 	function PLUGIN:HUDShouldDraw(element)
 		if (element == "CHudChat") then
 			return false
@@ -145,6 +155,12 @@ else
 		local text = net.ReadString()
 
 		if ((client.ixNextChat or 0) < CurTime() and isstring(text) and text:find("%S")) then
+			local maxLength = ix.config.Get("chatMax")
+
+			if (text:utf8len() > maxLength) then
+				text = text:utf8sub(0, maxLength)
+			end
+
 			hook.Run("PlayerSay", client, text)
 			client.ixNextChat = CurTime() + 0.5
 		end

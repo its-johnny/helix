@@ -18,7 +18,7 @@ ix.config.Add("containerOpenTime", 0.7, "How long it takes to open a container."
 })
 
 function ix.container.Register(model, data)
-	ix.container.stored[model] = data
+	ix.container.stored[model:lower()] = data
 end
 
 ix.util.Include("sh_definitions.lua")
@@ -28,7 +28,7 @@ if (SERVER) then
 
 	function PLUGIN:PlayerSpawnedProp(client, model, entity)
 		model = tostring(model):lower()
-		local data = ix.container.stored[model:lower()]
+		local data = ix.container.stored[model]
 
 		if (data) then
 			if (hook.Run("CanPlayerSpawnContainer", client, model, entity) == false) then return end
@@ -39,7 +39,7 @@ if (SERVER) then
 			container:SetModel(model)
 			container:Spawn()
 
-			ix.inventory.New(0, "container:" .. model, function(inventory)
+			ix.inventory.New(0, "container:" .. model:lower(), function(inventory)
 				-- we'll technically call this a bag since we don't want other bags to go inside
 				inventory.vars.isBag = true
 				inventory.vars.isContainer = true
@@ -107,7 +107,12 @@ if (SERVER) then
 
 		if (data) then
 			for _, v in ipairs(data) do
-				local data2 = ix.container.stored[v[4]:lower()]
+				if (!istable(v)) then
+					continue
+				end
+
+				local model = isstring(v[4]) and v[4]:lower()
+				local data2 = model and ix.container.stored[model]
 
 				if (data2) then
 					local inventoryID = tonumber(v[3])
@@ -123,8 +128,8 @@ if (SERVER) then
 					local entity = ents.Create("ix_container")
 					entity:SetPos(v[1])
 					entity:SetAngles(v[2])
-					entity:Spawn()
 					entity:SetModel(v[4])
+					entity:Spawn()
 					entity:SetSolid(SOLID_VPHYSICS)
 					entity:PhysicsInit(SOLID_VPHYSICS)
 
@@ -132,6 +137,7 @@ if (SERVER) then
 						entity.password = v[5]
 						entity:SetLocked(true)
 						entity.Sessions = {}
+						entity.PasswordAttempts = {}
 					end
 
 					if (v[6]) then
@@ -167,6 +173,26 @@ if (SERVER) then
 		end
 
 		local entity = net.ReadEntity()
+
+		if (!IsValid(entity) or entity:GetClass() != "ix_container" or !entity:GetLocked()) then
+			return
+		end
+
+		if (!client:GetCharacter()) then
+			return
+		end
+
+		local steamID = client:SteamID()
+		entity.PasswordAttempts = entity.PasswordAttempts or {}
+
+		local attempts = entity.PasswordAttempts[steamID]
+
+		if (attempts and attempts >= 10) then
+			client:NotifyLocalized("passwordAttemptLimit")
+
+			return
+		end
+
 		local password = net.ReadString()
 		local dist = entity:GetPos():DistToSqr(client:GetPos())
 
@@ -174,11 +200,13 @@ if (SERVER) then
 			if (entity.password and entity.password == password) then
 				entity:OpenInventory(client)
 			else
+				entity.PasswordAttempts[steamID] = attempts and attempts + 1 or 1
+
 				client:NotifyLocalized("wrongPassword")
 			end
 		end
 
-		client.ixNextContainerPassword = RealTime() + 0.5
+		client.ixNextContainerPassword = RealTime() + 1
 	end)
 
 	ix.log.AddType("containerPassword", function(client, ...)
@@ -265,6 +293,7 @@ properties.Add("container_setpassword", {
 		local password = net.ReadString()
 
 		entity.Sessions = {}
+		entity.PasswordAttempts = {}
 
 		if (password:len() != 0) then
 			entity:SetLocked(true)

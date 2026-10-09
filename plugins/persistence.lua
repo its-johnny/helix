@@ -7,7 +7,8 @@ PLUGIN.author = "alexgrist"
 PLUGIN.stored = PLUGIN.stored or {}
 
 local function GetRealModel(entity)
-	return entity:GetClass() == "prop_effect" and entity.AttachedEntity:GetModel() or entity:GetModel()
+	return entity:GetClass() == "prop_effect" and IsValid(entity.AttachedEntity) and entity.AttachedEntity:GetModel()
+		or entity:GetModel()
 end
 
 properties.Add("persist", {
@@ -157,7 +158,7 @@ if (SERVER) then
 					data.SubMaterial = {}
 
 					for k2, _ in pairs(materials) do
-						if (v:GetSubMaterial(k2)) then
+						if (v:GetSubMaterial(k2 - 1) != "") then
 							data.SubMaterial[k2] = v:GetSubMaterial(k2 - 1)
 						end
 					end

@@ -226,7 +226,7 @@ function SKIN:PaintButton(panel)
 			alpha = 75
 		end
 
-		if (panel:GetParent():GetName() == "DListView_Column") then
+		if (panel:GetParent() and panel:GetParent():GetName() == "DListView_Column") then
 			surface.SetDrawColor(color_white)
 			surface.DrawRect(0, 0, w, h)
 		end
@@ -332,21 +332,43 @@ end
 function SKIN:PaintVScrollBar(panel, width, height)
 end
 
+function SKIN:PaintHScrollBar(panel, width, height)
+end
+
 function SKIN:PaintScrollBarGrip(panel, width, height)
 	local parent = panel:GetParent()
-	local upButtonHeight = parent.btnUp:GetTall()
-	local downButtonHeight = parent.btnDown:GetTall()
 
-	DisableClipping(true)
-		surface.SetDrawColor(30, 30, 30, 200)
-		surface.DrawRect(4, -upButtonHeight, width - 8, height + upButtonHeight + downButtonHeight)
-	DisableClipping(false)
+	if (IsValid(parent.btnUp)) then
+		-- Vertical scrollbar
+		local upButtonHeight = parent.btnUp:GetTall()
+		local downButtonHeight = parent.btnDown:GetTall()
+
+		DisableClipping(true)
+			surface.SetDrawColor(30, 30, 30, 200)
+			surface.DrawRect(4, -upButtonHeight, width - 8, height + upButtonHeight + downButtonHeight)
+		DisableClipping(false)
+	else
+		-- Horizontal scrollbar
+		local leftButtonWidth = parent.btnLeft:GetWide()
+		local rightButtonWidth = parent.btnRight:GetWide()
+
+		DisableClipping(true)
+			surface.SetDrawColor(30, 30, 30, 200)
+			surface.DrawRect(-leftButtonWidth, 4, width + leftButtonWidth + rightButtonWidth, height - 8)
+		DisableClipping(false)
+	end
 end
 
 function SKIN:PaintButtonUp(panel, width, height)
 end
 
 function SKIN:PaintButtonDown(panel, width, height)
+end
+
+function SKIN:PaintButtonLeft(panel, width, height)
+end
+
+function SKIN:PaintButtonRight(panel, width, height)
 end
 
 function SKIN:PaintComboBox(panel, width, height)
@@ -509,6 +531,35 @@ function SKIN:PaintInfoBar(panel, width, height, color)
 	surface.SetDrawColor(230, 230, 230, 8)
 	surface.SetTexture(gradientUp)
 	surface.DrawTexturedRect(0, 0, width, height)
+end
+
+function SKIN:PaintInfoBarBackground(panel, width, height)
+	surface.SetDrawColor(230, 230, 230, 15)
+	surface.DrawRect(0, 0, width, height)
+	surface.DrawOutlinedRect(0, 0, width, height)
+
+	panel.bar:PaintManual()
+
+	DisableClipping(true)
+		panel.label:PaintManual()
+	DisableClipping(false)
+end
+
+function SKIN:PaintInventorySlot(panel, width, height)
+	surface.SetDrawColor(35, 35, 35, 85)
+	surface.DrawRect(1, 1, width - 2, height - 2)
+
+	surface.SetDrawColor(0, 0, 0, 250)
+	surface.DrawOutlinedRect(1, 1, width - 2, height - 2)
+end
+
+function SKIN:PaintDeathScreenBackground(panel, width, height, progress)
+	surface.SetDrawColor(0, 0, 0, (progress / 0.3) * 255)
+	surface.DrawRect(0, 0, width, height)
+end
+
+function SKIN:PaintDeathScreen(panel, width, height, progress)
+	ix.bar.DrawAction()
 end
 
 do

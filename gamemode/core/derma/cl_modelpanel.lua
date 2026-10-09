@@ -72,6 +72,10 @@ function PANEL:LayoutEntity()
 	local xRatio2 = x / scrW
 	local entity = self.Entity
 
+	if (!IsValid(entity)) then
+		return
+	end
+
 	entity:SetPoseParameter("head_pitch", yRatio*90 - 30)
 	entity:SetPoseParameter("head_yaw", (xRatio - xRatio2)*90 - 5)
 	entity:SetAngles(MODEL_ANGLE)
@@ -108,6 +112,10 @@ function PANEL:DrawModel()
 	end
 
 	self.Entity:DrawModel()
+
+	if (self.enableHook) then
+		hook.Run("PostDrawHelixModelView", self, self.Entity)
+	end
 end
 
 function PANEL:OnMousePressed()

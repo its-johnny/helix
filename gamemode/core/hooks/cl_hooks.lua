@@ -425,7 +425,7 @@ local vignetteAlphaDelta = 0
 local vignetteTraceHeight = Vector(0, 0, 768)
 local blurGoal = 0
 local blurDelta = 0
-local hasVignetteMaterial = vignette != "___error"
+local hasVignetteMaterial = !vignette:IsError()
 
 timer.Create("ixVignetteChecker", 1, 0, function()
 	local client = LocalPlayer()
@@ -622,8 +622,6 @@ function GM:HUDPaintBackground()
 	if (client:GetLocalVar("restricted") and !client:GetLocalVar("restrictNoMsg")) then
 		ix.util.DrawText(L"restricted", scrW * 0.5, scrH * 0.33, nil, 1, 1, "ixBigFont")
 	end
-
-	ix.hud.DrawAll(false)
 end
 
 function GM:PostDrawOpaqueRenderables(bDepth, bSkybox)
@@ -659,11 +657,13 @@ function GM:PostDrawOpaqueRenderables(bDepth, bSkybox)
 end
 
 function GM:PostDrawHUD()
-	ix.hud.DrawAll(true)
+	cam.Start2D()
+		ix.hud.DrawAll()
 
-	if (!IsValid(ix.gui.characterMenu) or ix.gui.characterMenu:IsClosing()) then
-		ix.bar.DrawAction()
-	end
+		if (!IsValid(ix.gui.deathScreen) and (!IsValid(ix.gui.characterMenu) or ix.gui.characterMenu:IsClosing())) then
+			ix.bar.DrawAction()
+		end
+	cam.End2D()
 end
 
 function GM:ShouldPopulateEntityInfo(entity)
@@ -854,7 +854,7 @@ function GM:RenderScreenspaceEffects()
 				render.SetColorModulation(1, 1, 1)
 				render.SetStencilWriteMask(28)
 				render.SetStencilTestMask(28)
-				render.SetStencilReferenceValue(35)
+				render.SetStencilReferenceValue(28)
 
 				render.SetStencilCompareFunction(STENCIL_ALWAYS)
 				render.SetStencilPassOperation(STENCIL_REPLACE)
@@ -926,6 +926,14 @@ net.Receive("ixStringRequest", function()
 	end)
 end)
 
+net.Receive("ixPlayerDeath", function()
+	if (IsValid(ix.gui.deathScreen)) then
+		ix.gui.deathScreen:Remove()
+	end
+
+	ix.gui.deathScreen = vgui.Create("ixDeathScreen")
+end)
+
 function GM:Think()
 	local client = LocalPlayer()
 
@@ -964,6 +972,12 @@ function GM:HUDDrawTargetID()
 	return false
 end
 
+function GM:BuildBusinessMenu()
+	if (!ix.config.Get("allowBusiness", true)) then
+		return false
+	end
+end
+
 gameevent.Listen("player_spawn")
 hook.Add("player_spawn", "ixPlayerSpawn", function(data)
 	local client = Player(data.userid)
@@ -972,5 +986,9 @@ hook.Add("player_spawn", "ixPlayerSpawn", function(data)
 		-- GetBoneName returns __INVALIDBONE__ for everything the first time you use it, so we'll force an update to make them valid
 		client:SetupBones()
 		client:SetIK(false)
+
+		if (client == LocalPlayer() and (IsValid(ix.gui.deathScreen) and !ix.gui.deathScreen:IsClosing())) then
+			ix.gui.deathScreen:Close()
+		end
 	end
 end)

@@ -56,7 +56,7 @@ ITEM.functions.View = {
 }
 ITEM.functions.combine = {
 	OnRun = function(item, data)
-		ix.item.instances[data[1]]:Transfer(item:GetData("id"))
+		ix.item.instances[data[1]]:Transfer(item:GetData("id"), nil, nil, item.player)
 
 		return false
 	end,
@@ -208,8 +208,8 @@ function ITEM:CanTransfer(oldInventory, newInventory)
 			return false
 		end
 
-		for _, v in pairs(self:GetInventory():GetItems()) do
-			if (v:GetData("id") == index2) then
+		for k, _ in self:GetInventory():Iter() do
+			if (k:GetData("id") == index2) then
 				return false
 			end
 		end
